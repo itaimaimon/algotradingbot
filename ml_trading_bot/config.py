@@ -14,6 +14,7 @@ def get_exchange():
         'apiKey': API_KEY,
         'secret': SECRET_KEY,
         'enableRateLimit': True,
+        'options': {'adjustForTimeDifference': True}
     })
     
     # CRITICAL: Force Paper Trading Mode

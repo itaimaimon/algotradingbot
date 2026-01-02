@@ -1,0 +1,21 @@
+keys.txt
+*.json
+!package.json
+
+# --- Python & Environment ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# --- Trading Logs & Data ---
+*.log
+data/*.csv
+backtest_results/
+
+# --- IDEs ---
+.vscode/
+.idea/
