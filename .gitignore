@@ -10,7 +10,7 @@ venv/
 .venv/
 env/
 .env/
-.env
+
 # --- Trading Logs & Data ---
 *.log
 data/*.csv

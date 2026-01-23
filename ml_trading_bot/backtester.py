@@ -1,12 +1,12 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
-from strategy import get_ml_prediction
+from strategy import generate_signal
 from performance_metrics import generate_report
 
 #Feature: Slippage & Fees
 FEE_PCT = 0.001       # 0.1% per trade
-SLIPPAGE_PCT = 0.0005 # 0.05% slippage
+SLIPPAGE_PCT = 0.001 # 0.1% slippage
 
 def run_backtest(df, initial_balance=10000):
     if df is None or len(df) < 50:
@@ -21,7 +21,7 @@ def run_backtest(df, initial_balance=10000):
     # We need enough data to train (at least 50 rows), but we can't start 
     # at 100 if we only have 90 rows.
     # We use min(100, len(df) - 10) to ensure we always have a loop.
-    start_idx = min(100, int(len(df) * 0.8)) 
+    start_idx = max(100, int(len(df) * 0.8)) 
     
     # Ensure start_idx is at least 20 to give the ML model *some* history
     if start_idx < 20: start_idx = 20
@@ -36,33 +36,66 @@ def run_backtest(df, initial_balance=10000):
         dates.append(df.iloc[i]['ts'])
 
     # --- THE MAIN LOOP ---
+    switch_counter= 0
+    hold_counter =0 
+    last_Four_positions= ["HOLD","HOLD","HOLD","HOLD"]
+    current_position= "HOLD"
     for i in range(start_idx, len(df) - 1):
-        current_window = df.iloc[:i]
+        current_window = df.iloc[i-50:i]
         
         # Validation: Check if window is empty
         if len(current_window) < 10:
             continue
             
         current_price = df.iloc[i]['close']
+        prev_price = df.iloc[i-1]['close']
         actual_next_price = df.iloc[i+1]['close']
         timestamp = df.iloc[i+1]['ts']
         
+        if current_position == "BUY":
+            # Long profit/loss: (Current - Previous) / Previous
+            pct_change = (current_price - prev_price) / prev_price
+            balance += (balance * pct_change)
+            
+        elif current_position == "SELL":
+            # Short profit/loss: (Previous - Current) / Previous
+            pct_change = (prev_price - current_price) / prev_price
+            balance += (balance * pct_change)
+
         # Get Prediction
-        try:
-            prediction, _ = get_ml_prediction(current_window)
+        try:    
+            prediction = generate_signal(current_window)
+            if prediction != "HOLD":
+                hold_counter = 0
+                last_Four_positions[3]=last_Four_positions[2]
+                last_Four_positions[2]=last_Four_positions[1]
+                last_Four_positions[1]=last_Four_positions[0]
+                last_Four_positions[0]=prediction
+                if prediction != current_position:
+                    switch_counter +=1 
+                else:
+                    switch_counter =0 
+            else:
+                hold_counter +=1
+                if hold_counter == 4:
+                    switch_counter=0
+                    
+                last_Four_positions[3]=last_Four_positions[2]
+                last_Four_positions[2]=last_Four_positions[1]
+                last_Four_positions[1]=last_Four_positions[0]
         except Exception as e:
+            print(e)
             # If ML fails (e.g., data too small), skip this candle
-            prediction = None
-        
+            prediction = "HOLD"
+        print(prediction)
         # Trading Logic
-        if prediction and prediction > current_price * 1.005:
-            # BUY SIGNAL
-            entry_price = current_price * (1 + SLIPPAGE_PCT) # Slippage
-            gross_change = (actual_next_price - entry_price) / entry_price
-            net_change = gross_change - (FEE_PCT * 2)        # Fees
-            
-            balance += (balance * net_change)
-            
+        #if last_Four_positions[0] != "HOLD" and last_Four_positions[0] != current_position and last_Four_positions[0]==last_Four_positions[1] and last_Four_positions[1]==last_Four_positions[2] and last_Four_positions[2]==last_Four_positions[3]:
+        if switch_counter==3:
+            balance -= (balance * (FEE_PCT + SLIPPAGE_PCT))
+            print(f"🔄 SWITCH: {current_position} -> {prediction} at ${current_price:.2f}")
+            current_position = prediction
+            switch_counter = 0
+            hold_counter = 0
         equity_curve.append(balance)
         dates.append(timestamp)
 

@@ -1,8 +1,8 @@
 import time
 import os
-from config import SYMBOL, TIMEFRAME, get_exchange
+from config import SYMBOL, TIMEFRAME, get_exchange, API_KEY, SECRET_KEY
 from data_loader import get_historical_data
-from strategy import get_ml_prediction
+from strategy import generate_signal
 # Top of main.py
 from risk_manager import RiskManager
 from backtester import run_backtest
@@ -54,7 +54,7 @@ def run_bot():
 
             # 2. Get Prediction
             current_price = df['close'].iloc[-1]
-            predicted_price, _ = get_ml_prediction(df)
+            predicted_price, _ = generate_signal(df)
         
             if predicted_price is None:
                 logging.info("  Not enough data to generate features.")
