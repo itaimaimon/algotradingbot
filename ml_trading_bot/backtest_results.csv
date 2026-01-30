@@ -1,0 +1,6 @@
+Combination_Size,Features,Sharpe_Ratio,max Drawdown,Total_Return_Pct
+5,-3.47%,-1.99%
+1,volatility,-0.48,-7.46%,-3.78%
+1,adx,0.67,-3.05%,5.21%
+1,volume_change,-0.46,-4.4%,-3.63%
+1,dist_from_mean,-0.27,-4.92%,-2.21%

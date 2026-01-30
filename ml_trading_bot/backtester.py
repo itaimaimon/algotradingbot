@@ -8,7 +8,7 @@ from performance_metrics import generate_report
 FEE_PCT = 0.001       # 0.1% per trade
 SLIPPAGE_PCT = 0.001 # 0.1% slippage
 
-def run_backtest(df, initial_balance=10000):
+def run_backtest(df, initial_balance=10000, active_features = ['returns', 'range', 'rsi', 'volatility','adx','volume_change', 'relative_volume','dist_from_mean']):
     if df is None or len(df) < 50:
         print("Error: Not enough data to backtest. Need at least 50 rows.")
         return None
@@ -64,7 +64,7 @@ def run_backtest(df, initial_balance=10000):
 
         # Get Prediction
         try:    
-            prediction = generate_signal(current_window)
+            prediction = generate_signal(current_window,active_features= active_features)
             if prediction != "HOLD":
                 hold_counter = 0
                 last_Four_positions[3]=last_Four_positions[2]
@@ -87,7 +87,7 @@ def run_backtest(df, initial_balance=10000):
             print(e)
             # If ML fails (e.g., data too small), skip this candle
             prediction = "HOLD"
-        print(prediction)
+        #print(prediction)
         # Trading Logic
         #if last_Four_positions[0] != "HOLD" and last_Four_positions[0] != current_position and last_Four_positions[0]==last_Four_positions[1] and last_Four_positions[1]==last_Four_positions[2] and last_Four_positions[2]==last_Four_positions[3]:
         if switch_counter==3:
@@ -113,10 +113,10 @@ def run_backtest(df, initial_balance=10000):
         print(f"{k}: {v}")
     print("------------------------------------------")
 
-    plot_results(equity_series) # Call plotting
+    plot_results(equity_series,active_features) # Call plotting
     return report
 
-def plot_results(equity_series):
+def plot_results(equity_series,active_features):
     plt.figure(figsize=(12, 6))
     plt.plot(equity_series.index, equity_series.values, label='Portfolio Value', color='green')
     plt.title("Backtest Equity Curve (with Fees & Slippage)")
@@ -125,4 +125,7 @@ def plot_results(equity_series):
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    features_str= "_".join(active_features)
+    file_name= f"equity_series_{features_str}.png"
+    plt.savefig(file_name) # This creates a file in your folder
+    plt.close()

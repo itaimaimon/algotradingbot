@@ -4,6 +4,11 @@ import pandas as pd
 import time
 from config import SYMBOL, TIMEFRAME, API_KEY, SECRET_KEY
 
+import datetime
+import time # Ensure time is imported
+
+
+
 def get_exchange():
     exchange= ccxt.alpaca({
         'apiKey': API_KEY,
@@ -22,11 +27,7 @@ def get_exchange():
             'market': 'https://data.alpaca.markets'
         }
     return exchange    
-    
-import datetime
 
-import datetime
-import time # Ensure time is imported
 
 def get_historical_data(symbol, timeframe, target_rows=1000):
     exchange = get_exchange()
@@ -83,4 +84,5 @@ def get_historical_data(symbol, timeframe, target_rows=1000):
         df = df.iloc[-target_rows:].reset_index(drop=True)
     
     print(f"✅ Final Dataset: {len(df)} rows ready for ML.")
+    df.to_csv("btc_hourly.csv", index = False)
     return df

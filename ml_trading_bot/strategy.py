@@ -48,23 +48,20 @@ def calculate_adx(df, window=14):
     return adx
 
 
-def generate_signal(df):
+def generate_signal(df,active_features= ['returns', 'range', 'rsi', 'volatility','adx','volume_change', 'relative_volume','dist_from_mean']):
     # 1. Warm-up Check
     if len(df) < 50:
         return "HOLD"
 
     data = df.copy()
     
-    # 2. Calculate All 4 Features
+    # 2. Calculate All Features
     data['returns'] = data['close'].pct_change()
     data['range'] = (data['high'] - data['low']) / data['close']
     data['rsi'] = calculate_rsi(data['close'])
     data['volatility'] = data['returns'].rolling(window=10).std()
     data['adx'] = calculate_adx(data)
    
-   
-   
-    #data['dist_from_mean'] = (data['close'] - data['close'].rolling(100).mean()) / (data['close'].rolling(100).std()+1e-9)
     # --- 1. DATA-EFFICIENT DIST FROM MEAN ---
     # We use a 20-period window. This is better for 1h charts 
     # and leaves 180 rows of data for the model to learn from.
@@ -89,10 +86,9 @@ def generate_signal(df):
 
     # Instead of raw volume, use the percentage change
     data['volume_change'] = data['volume'].pct_change()
-
-    #Broken relative volume: 
+ 
     #"Relative Volume" (Current volume vs. 24-hour average)
-    #data['relative_volume'] = data['volume'] / data['volume'].rolling(window=24).mean()
+    #Broken: data['relative_volume'] = data['volume'] / data['volume'].rolling(window=24).mean()
     
     # 1. Calculate the baseline from the PREVIOUS 24 hours (excluding now)
     # We shift by 1 so the average at index 'i' is based on 'i-1' down to 'i-24'
@@ -117,8 +113,8 @@ def generate_signal(df):
         return "HOLD"
 
     # 3. Define Features List (Matches your error context)
-    features = ['returns', 'range', 'rsi', 'volatility','adx','volume_change', 'relative_volume','dist_from_mean']
-    #features = ['returns', 'rsi', 'adx']    
+    #features = ['returns', 'range', 'rsi', 'volatility','adx','volume_change', 'relative_volume','dist_from_mean']
+    features = active_features
     X = data[features]
     y = data['target']
 
@@ -132,7 +128,7 @@ def generate_signal(df):
         print("\n--- 🧠 Model Intelligence Report ---")
         for name, imp in zip(features, importances):
             print(f"{name.upper()}: {imp:.2%}")
-        
+        """
         # Save a plot to a file just in case you want to see it
         plt.figure(figsize=(8,4))
         plt.barh(features, importances)
@@ -140,7 +136,7 @@ def generate_signal(df):
         plt.show()
         plt.savefig("feature_importance.png") # This creates a file in your folder
         plt.close()
-
+        """
     # 5. Predict
     latest_features = X.iloc[[-1]]
     

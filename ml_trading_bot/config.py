@@ -6,8 +6,8 @@ load_dotenv()
 
 API_KEY = os.getenv('ALPACA_API_KEY')
 SECRET_KEY = os.getenv('ALPACA_SECRET_KEY')
-SYMBOL = os.getenv('SYMBOL', 'BTC/USD')
-TIMEFRAME = os.getenv('TIMEFRAME', '1h')
+SYMBOL = os.getenv('SYMBOL')
+TIMEFRAME = os.getenv('TIMEFRAME')
 
 def get_exchange():
     exchange = ccxt.alpaca({
