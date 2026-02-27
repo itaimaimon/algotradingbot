@@ -1,18 +1,20 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
-from strategy import generate_signal
+from strategy import generate_signal,train_master_model
 from performance_metrics import generate_report
+from strategy import add_indicators
 
 #Feature: Slippage & Fees
 FEE_PCT = 0.001       # 0.1% per trade
 SLIPPAGE_PCT = 0.001 # 0.1% slippage
 
-def run_backtest(df, initial_balance=10000, active_features = ['returns', 'range', 'rsi', 'volatility','adx','volume_change', 'relative_volume','dist_from_mean']):
+def run_backtest(df, add_indicators_happened=False, initial_balance=10000,random_seed=42, active_features = ['returns', 'range', 'rsi', 'volatility','adx','volume_change', 'relative_volume','dist_from_mean']):
     if df is None or len(df) < 50:
         print("Error: Not enough data to backtest. Need at least 50 rows.")
         return None
-
+    if not add_indicators_happened:
+        df= add_indicators(df)
     balance = initial_balance
     equity_curve = []
     dates = []
@@ -28,7 +30,7 @@ def run_backtest(df, initial_balance=10000, active_features = ['returns', 'range
 
     print(f"Running Realistic Backtest on {len(df)} rows...")
     print(f"   (Training on first {start_idx} candles, testing on remainder)")
-
+    model = train_master_model(df.iloc[:start_idx],add_indicators_happened=True,active_features=active_features,random_seed=random_seed)
     # Pre-fill equity curve for the training period (flat line)
     # This aligns the charts so they start at the correct timestamp
     for i in range(start_idx):
@@ -64,7 +66,8 @@ def run_backtest(df, initial_balance=10000, active_features = ['returns', 'range
 
         # Get Prediction
         try:    
-            prediction = generate_signal(current_window,active_features= active_features)
+
+            prediction = generate_signal(current_window, add_indicators_happened= True, active_features= active_features)
             if prediction != "HOLD":
                 hold_counter = 0
                 last_Four_positions[3]=last_Four_positions[2]
@@ -112,8 +115,8 @@ def run_backtest(df, initial_balance=10000, active_features = ['returns', 'range
     for k, v in report.items():
         print(f"{k}: {v}")
     print("------------------------------------------")
-
-    plot_results(equity_series,active_features) # Call plotting
+    # if ploting desired desired
+    #plot_results(equity_series,active_features) # Call plotting
     return report
 
 def plot_results(equity_series,active_features):

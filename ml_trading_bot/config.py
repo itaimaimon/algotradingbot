@@ -9,6 +9,14 @@ SECRET_KEY = os.getenv('ALPACA_SECRET_KEY')
 SYMBOL = os.getenv('SYMBOL')
 TIMEFRAME = os.getenv('TIMEFRAME')
 
+def get_timeframe_seconds():
+    unit = TIMEFRAME[-1]
+    amount = int(TIMEFRAME[:-1])
+    if unit == 'm': return amount * 60
+    if unit == 'h': return amount * 3600
+    if unit == 'd': return amount * 86400
+    return 60 # Default
+
 def get_exchange():
     exchange = ccxt.alpaca({
         'apiKey': API_KEY,

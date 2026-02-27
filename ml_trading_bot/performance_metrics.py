@@ -48,6 +48,6 @@ def generate_report(equity_curve):
     
     return {
         "Sharpe Ratio": sharpe,
-        "Max Drawdown": f"{mdd}%",
-        "Total Return": f"{round(total_return, 2)}%"
+        "Max Drawdown": mdd,
+        "Total Return": total_return
     }

@@ -1,10 +1,10 @@
 import time
 import pandas as pd
 from datetime import datetime, timedelta
-from strategy import generate_signal
+from strategy import generate_signal, MODEL_CONSTRUCTED, LAST_TRAIN_TIME, train_master_model
 # Import your existing tools
 from data_loader import get_exchange, get_historical_data 
-from config import SYMBOL, TIMEFRAME
+from config import SYMBOL, TIMEFRAME, get_timeframe_seconds
 import logging
 from risk_manager import RiskManager
 
@@ -111,6 +111,10 @@ def run_live_bot(active_features):
     else:
         current_position = "HOLD"
 
+
+    interval_sec = get_timeframe_seconds()
+    print(f"🚀 Bot synchronized to {TIMEFRAME} timeframe.")
+
     while True:
         try:
             current_balance = exchange.fetch_balance()['free']['USD']
@@ -123,24 +127,29 @@ def run_live_bot(active_features):
             # 2. WAIT FOR NEXT CANDLE
             # Calculate wait time
             now = datetime.now()
-            next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
-            wait_seconds = (next_hour - now).total_seconds() + 10 # 10s buffer
             
-            print(f"⏳ Waiting {int(wait_seconds // 60)}m {int(wait_seconds % 60)}s for candle close...")
-            time.sleep(wait_seconds)
-
+            current_ts = int(now.timestamp())
+            next_boundary = (current_ts // interval_sec + 1) * interval_sec
+            sleep_time = (next_boundary - current_ts) + 2 # 2s buffer
+            
+            print(f"⏳ Next {TIMEFRAME} candle at {datetime.fromtimestamp(next_boundary)}")
+            time.sleep(max(0, sleep_time))
+            if MODEL_CONSTRUCTED == False or LAST_TRAIN_TIME is None or (now - LAST_TRAIN_TIME).total_seconds()>3600: 
+                print("🧠 Retraining Master Model...")
+                big_df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=5000)
+                model = train_master_model(big_df, active_features=active_features)
+            
             # 3. GET DATA (Using your data_loader)
-            # We fetch 300 rows to ensure indicators have enough warmup data
+            # We fetch 500 rows to ensure indicators have enough warmup data
             print("📥 Fetching live data...")
-            df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=300)
-            
+            current_df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=300)
             # Data loader returns 'ts' column, we might need to ensure column names match strategy
             # Your data_loader returns: ['ts', 'open', 'high', 'low', 'close', 'volume']
             # This is perfectly compatible with the strategy.
     
 
             # 4. GET SIGNAL
-            raw_signal = generate_signal(df, active_features)
+            raw_signal = generate_signal(current_df, active_features=active_features)
             print(f"🔮 Raw Signal: {raw_signal}")
 
             # 5. BUFFER LOGIC (n-Signal Confirmation)
@@ -182,4 +191,4 @@ def run_live_bot(active_features):
 
         except Exception as e:
             print(f"⚠️ Loop Error: {e}")
-            time.sleep(60) # Wait 1 min before retrying
+            time.sleep(10) # Wait 1 min before retrying
