@@ -36,10 +36,7 @@ def run_backtest(df, add_indicators_happened=False, initial_balance=10000,random
     # This aligns the charts so they start at the correct timestamp
     for i in range(start_idx):
         equity_curve.append(initial_balance)
-        if IS_CRYPTO:
-            dates.append(df.iloc[i]['ts'])
-        else:
-            dates.append(df.index[i])
+        dates.append(df.index[i])
     # --- THE MAIN LOOP ---
     switch_counter= 0
     hold_counter =0 
@@ -54,11 +51,8 @@ def run_backtest(df, add_indicators_happened=False, initial_balance=10000,random
             
         current_price = df.iloc[i]['close']
         prev_price = df.iloc[i-1]['close']
-        actual_next_price = df.iloc[i+1]['close']
-        if IS_CRYPTO:
-            timestamp = df.iloc[i+1]['ts']
-        else:
-            timestamp = df.index[i+1]    
+        #actual_next_price = df.iloc[i+1]['close']
+        timestamp = df.index[i+1]    
         if current_position == "BUY":
             # Long profit/loss: (Current - Previous) / Previous
             pct_change = (current_price - prev_price) / prev_price

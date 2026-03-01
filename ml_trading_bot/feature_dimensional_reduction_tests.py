@@ -35,6 +35,11 @@ equity_features = [
                    'hour'
                 ] 
 
+if IS_CRYPTO:
+    potential_features = crypto_features+base_features
+else:
+    potential_features = crypto_features + equity_features
+
 
 def run_feature_tournament(iterations =10):
     df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, is_crypto= IS_CRYPTO, target_rows=5000)
@@ -52,10 +57,6 @@ def run_feature_tournament(iterations =10):
     """
 
     """Runs the combinatorial backtest loop we discussed earlier."""
-    if IS_CRYPTO:
-        all_features = base_features + crypto_features
-    else:
-        all_features = base_features + equity_features
 
 
 
@@ -66,8 +67,8 @@ def run_feature_tournament(iterations =10):
     with open(log_file, mode='w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['num_features','Features', 'mean_sharpe', 'std_sharpe', 'mean_returns', 'std_returns', 'Is_Stable'])
-        for r in range(3,len(all_features)):
-            for combo in itertools.combinations(all_features, r):
+        for r in range(3,len(potential_features)):
+            for combo in itertools.combinations(potential_features, r):
                 combo_list = list(combo)
                 sharpe_results = []
                 total_return_results = []
@@ -203,11 +204,11 @@ def run_rfe_tournament(df, initial_features, iterations=5):
     return report_df
 
 
+if __name__ == "__main__":
+    df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=5000)
+    df = add_indicators(df)
 
-#df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=5000)
-#df = add_indicators(df)
+    rfe_results = run_rfe_tournament(df, potential_features)
 
-#rfe_results = run_rfe_tournament(df, potential_features)
-
-#plot_correlation_matrix(df, potential_features)
-#print(calculate_vif(df,potential_features))
+    plot_correlation_matrix(df, potential_features)
+    print(calculate_vif(df,potential_features))

@@ -1,4 +1,4 @@
-import pandas as pd
+
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 import joblib
@@ -9,7 +9,6 @@ import numpy as np
 import ccxt
 import yfinance as yf
 import random
-from data_loader import get_historical_data
 
 
 MODEL_CONSTRUCTED = False
