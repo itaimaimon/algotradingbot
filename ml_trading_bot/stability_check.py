@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from backtester import run_backtest
 from strategy import train_master_model
-from data_loader import get_historical_data
-from config import TIMEFRAME, SYMBOL
+from data_loader_alpaca import get_historical_data
+from config import TIMEFRAME, SYMBOL, IS_CRYPTO
 
 
 
@@ -52,5 +52,6 @@ def run_stability_check(df, active_features, iterations=10):
 # To use:[]
 # df = pd.read_csv("btc_hourly.csv")
 # run_stability_check(df, ['range', 'volume_change', 'relative_volume'])
-big_df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=5000)
-run_stability_check(big_df, ['range', 'volume_change', 'relative_volume'])
+if __name__ == "__main__":
+    big_df = get_historical_data(symbol=SYMBOL,timeframe= TIMEFRAME, target_rows=5000)
+    run_stability_check(big_df, ['range', 'volume_change', 'relative_volume'])

@@ -3,7 +3,8 @@ import ccxt
 from dotenv import load_dotenv
 
 load_dotenv()
-
+IS_CRYPTO=os.getenv("IS_CRYPTO")
+IS_CRYPTO=bool(IS_CRYPTO=="True")
 API_KEY = os.getenv('ALPACA_API_KEY')
 SECRET_KEY = os.getenv('ALPACA_SECRET_KEY')
 SYMBOL = os.getenv('SYMBOL')

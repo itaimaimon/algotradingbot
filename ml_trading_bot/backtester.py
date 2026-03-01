@@ -1,9 +1,10 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 from strategy import generate_signal,train_master_model
 from performance_metrics import generate_report
 from strategy import add_indicators
+import os
+from config import IS_CRYPTO
 
 #Feature: Slippage & Fees
 FEE_PCT = 0.001       # 0.1% per trade
@@ -35,8 +36,10 @@ def run_backtest(df, add_indicators_happened=False, initial_balance=10000,random
     # This aligns the charts so they start at the correct timestamp
     for i in range(start_idx):
         equity_curve.append(initial_balance)
-        dates.append(df.iloc[i]['ts'])
-
+        if IS_CRYPTO:
+            dates.append(df.iloc[i]['ts'])
+        else:
+            dates.append(df.index[i])
     # --- THE MAIN LOOP ---
     switch_counter= 0
     hold_counter =0 
@@ -52,8 +55,10 @@ def run_backtest(df, add_indicators_happened=False, initial_balance=10000,random
         current_price = df.iloc[i]['close']
         prev_price = df.iloc[i-1]['close']
         actual_next_price = df.iloc[i+1]['close']
-        timestamp = df.iloc[i+1]['ts']
-        
+        if IS_CRYPTO:
+            timestamp = df.iloc[i+1]['ts']
+        else:
+            timestamp = df.index[i+1]    
         if current_position == "BUY":
             # Long profit/loss: (Current - Previous) / Previous
             pct_change = (current_price - prev_price) / prev_price
@@ -130,5 +135,8 @@ def plot_results(equity_series,active_features):
     plt.tight_layout()
     features_str= "_".join(active_features)
     file_name= f"equity_series_{features_str}.png"
-    plt.savefig(file_name) # This creates a file in your folder
+    folder_name= "Features charts"
+    file_path = os.path.join(folder_name, file_name)
+
+    plt.savefig(file_path) # This creates a file in your folder
     plt.close()

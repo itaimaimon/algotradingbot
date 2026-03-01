@@ -1,30 +1,53 @@
 import logging
 import time
-from config import SYMBOL, TIMEFRAME
+from config import SYMBOL, TIMEFRAME, IS_CRYPTO
 from data_loader import get_historical_data
 from strategy import train_master_model
 from backtester import run_backtest
-from live_trading import run_live_bot
+from live_trading_crypto import run_live_bot
 from feature_dimensional_reduction_tests import run_feature_tournament
 
 # --- SETTINGS ---
 BACKTESTING = True  # <--- TOGGLE THIS: True = Lab Mode, False = Real Money
-TOURNAMENT_BACKTEST = False
+TOURNAMENT_BACKTEST = True
 DATA_FILE = "btc_hourly.csv" # Your historical data file
 
 # The features you found were "Best" (Update this list based on your findings)
-BEST_FEATURES = ["returns","range","dist_from_mean","daily_trend","btc_corr"]
+#BEST_FEATURES = ["returns","range","dist_from_mean","daily_trend","btc_corr"]
 
+base_features=[
+                'returns',
+                'range', 
+                'rsi', 
+                'volatility',
+                'adx',
+                'volume_change', 
+                'relative_volume',
+                'dist_from_mean'
+                ]
+
+crypto_features = [
+                    'order_flow',
+                    'daily_trend',
+                    'btc_corr'
+                ]
+
+equity_features = [ 
+                   'gap_pct',
+                   'order_flow',
+                   'spy_corr',
+                   'hour'
+                ] 
 
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    big_df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=5000)
+    big_df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, is_crypto=IS_CRYPTO, target_rows=5000)
     while big_df is None:
         logging.info("SLEEPING: Waiting for data availability...")
         time.sleep(60)
-        big_df = get_historical_data(SYMBOL, TIMEFRAME)
-    model = train_master_model(big_df, active_features=BEST_FEATURES)
+        big_df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME,is_crypto=IS_CRYPTO)
+    model = train_master_model(big_df, active_features=base_features)
     if BACKTESTING:
         print("🧪 RUNNING IN BACKTEST MODE")
         
@@ -33,14 +56,14 @@ if __name__ == "__main__":
             run_feature_tournament() 
         else:
         # OPTION B: Run a single backtest with your best features
-            print(f"Running single test with: {BEST_FEATURES}")
-            history = run_backtest(big_df, active_features=BEST_FEATURES)
+            print(f"Running single test with: {base_features}")
+            history = run_backtest(big_df, active_features=base_features)
         
     else:
         print("⚠️ RUNNING IN LIVE PAPER TRADING MODE")
         print("Press Ctrl+C to stop.")
         # Passes the winning features to the live bot
-        run_live_bot(active_features=BEST_FEATURES)
+        run_live_bot(active_features=base_features)
 
 
 

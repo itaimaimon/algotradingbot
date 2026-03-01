@@ -6,42 +6,41 @@ import numpy as np
 import itertools
 import csv
 import time
-from config import SYMBOL, TIMEFRAME
+from config import SYMBOL, TIMEFRAME, IS_CRYPTO
 from data_loader import get_historical_data
 from strategy import add_indicators, train_master_model
 from backtester import run_backtest
 
+base_features=[
+                'returns',
+                'range', 
+                'rsi', 
+                'volatility',
+                'adx',
+                'volume_change', 
+                'relative_volume',
+                'dist_from_mean'
+                ]
 
-all_features = [
-                    'returns', 
-                    'range', 
-                    'rsi', 
-                    'volatility', 
-                    'adx', 
-                    'volume_change', 
-                    'dist_from_mean',
-                    'relative_volume',
+crypto_features = [
                     'order_flow',
                     'daily_trend',
                     'btc_corr'
                 ]
 
-potential_features = [
-                    'returns', 
-                    'range', 
-                    'volume_change', 
-                    'dist_from_mean',
-                    'relative_volume',
-                    'order_flow',
-                    'daily_trend',
-                    'btc_corr'
+equity_features = [ 
+                   'gap_pct',
+                   'order_flow',
+                   'spy_corr',
+                   'hour'
                 ] 
 
+
 def run_feature_tournament(iterations =10):
-    df = get_historical_data(SYMBOL, TIMEFRAME,target_rows=5000)
+    df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, is_crypto= IS_CRYPTO, target_rows=5000)
     while df is None:
         time.sleep(60)
-        df = get_historical_data(SYMBOL, TIMEFRAME)
+        df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME)
     df=add_indicators(df)    
 
     # Split data into 3 equal chunks
@@ -53,30 +52,10 @@ def run_feature_tournament(iterations =10):
     """
 
     """Runs the combinatorial backtest loop we discussed earlier."""
-    all_features = [
-                    'returns', 
-                    'range', 
-                    'rsi', 
-                    'volatility', 
-                    'adx', 
-                    'volume_change', 
-                    'dist_from_mean',
-                    'relative_volume',
-                    'order_flow',
-                    'daily_trend',
-                    'btc_corr'
-                ]
-
-    potential_features = [
-                    'returns', 
-                    'range', 
-                    'volume_change', 
-                    'dist_from_mean',
-                    'relative_volume',
-                    'order_flow',
-                    'daily_trend',
-                    'btc_corr'
-                ] 
+    if IS_CRYPTO:
+        all_features = base_features + crypto_features
+    else:
+        all_features = base_features + equity_features
 
 
 
@@ -87,8 +66,8 @@ def run_feature_tournament(iterations =10):
     with open(log_file, mode='w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['num_features','Features', 'mean_sharpe', 'std_sharpe', 'mean_returns', 'std_returns', 'Is_Stable'])
-        for r in range(3,len(potential_features)):
-            for combo in itertools.combinations(potential_features, r):
+        for r in range(3,len(all_features)):
+            for combo in itertools.combinations(all_features, r):
                 combo_list = list(combo)
                 sharpe_results = []
                 total_return_results = []

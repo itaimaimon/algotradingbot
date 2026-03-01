@@ -3,7 +3,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 from strategy import generate_signal, MODEL_CONSTRUCTED, LAST_TRAIN_TIME, train_master_model
 # Import your existing tools
-from data_loader import get_exchange, get_historical_data 
+from data_loader_alpaca import get_exchange
+from data_loader import get_historical_data 
 from config import SYMBOL, TIMEFRAME, get_timeframe_seconds
 import logging
 from risk_manager import RiskManager
@@ -136,13 +137,13 @@ def run_live_bot(active_features):
             time.sleep(max(0, sleep_time))
             if MODEL_CONSTRUCTED == False or LAST_TRAIN_TIME is None or (now - LAST_TRAIN_TIME).total_seconds()>3600: 
                 print("🧠 Retraining Master Model...")
-                big_df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=5000)
+                big_df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, target_rows=5000)
                 model = train_master_model(big_df, active_features=active_features)
             
             # 3. GET DATA (Using your data_loader)
             # We fetch 500 rows to ensure indicators have enough warmup data
             print("📥 Fetching live data...")
-            current_df = get_historical_data(SYMBOL, TIMEFRAME, target_rows=300)
+            current_df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, target_rows=300)
             # Data loader returns 'ts' column, we might need to ensure column names match strategy
             # Your data_loader returns: ['ts', 'open', 'high', 'low', 'close', 'volume']
             # This is perfectly compatible with the strategy.
