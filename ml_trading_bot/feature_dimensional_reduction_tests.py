@@ -11,10 +11,12 @@ from data_loader import get_historical_data
 from strategy import add_indicators, train_master_model
 from backtester import run_backtest
 
+deleted = [
+                'range',  'rsi','hour', 'close_spy']
+
+
 base_features=[
                 'returns',
-                'range', 
-                'rsi', 
                 'volatility',
                 'adx',
                 'volume_change', 
@@ -25,27 +27,27 @@ base_features=[
 crypto_features = [
                     'order_flow',
                     'daily_trend',
-                    'btc_corr'
+                    'btc_corr',
+                    'close_btc'
                 ]
 
 equity_features = [ 
                    'gap_pct',
                    'order_flow',
-                   'spy_corr',
-                   'hour'
+                   'spy_corr'
                 ] 
 
 if IS_CRYPTO:
-    potential_features = crypto_features+base_features
+    potential_features = base_features + crypto_features
 else:
-    potential_features = crypto_features + equity_features
+    potential_features = base_features + equity_features
 
 
-def run_feature_tournament(iterations =10):
-    df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, is_crypto= IS_CRYPTO, target_rows=5000)
+def run_feature_tournament(iterations =5):
+    df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, is_crypto= IS_CRYPTO, target_rows=2000)
     while df is None:
         time.sleep(60)
-        df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME)
+        df = get_historical_data(symbol=SYMBOL, timeframe=TIMEFRAME, is_crypto= IS_CRYPTO, target_rows=2000)
     df=add_indicators(df)    
 
     # Split data into 3 equal chunks
@@ -211,4 +213,4 @@ if __name__ == "__main__":
     rfe_results = run_rfe_tournament(df, potential_features)
 
     plot_correlation_matrix(df, potential_features)
-    print(calculate_vif(df,potential_features))
+    #print(calculate_vif(df,potential_features))

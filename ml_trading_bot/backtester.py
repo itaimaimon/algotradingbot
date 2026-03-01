@@ -31,7 +31,7 @@ def run_backtest(df, add_indicators_happened=False, initial_balance=10000,random
 
     print(f"Running Realistic Backtest on {len(df)} rows...")
     print(f"   (Training on first {start_idx} candles, testing on remainder)")
-    model = train_master_model(df.iloc[:start_idx],add_indicators_happened=True,active_features=active_features,random_seed=random_seed)
+    train_master_model(df.iloc[:start_idx],add_indicators_happened=True,active_features=active_features,random_seed=random_seed)
     # Pre-fill equity curve for the training period (flat line)
     # This aligns the charts so they start at the correct timestamp
     for i in range(start_idx):

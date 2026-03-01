@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
+from config import TIMEFRAME, IS_CRYPTO
 
-def calculate_sharpe_ratio(returns, risk_free_rate=0.0, periods_per_year=365):
+
+def calculate_sharpe_ratio(returns, risk_free_rate=0.0,timeframe =TIMEFRAME, is_crypto=IS_CRYPTO):
     """
     Calculates the Annualized Sharpe Ratio.
     Args:
@@ -11,7 +13,16 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0.0, periods_per_year=365):
     """
     if len(returns) < 2:
         return 0.0
-    
+    periods_per_year = 1
+    #default to timeframe = '1h'
+    if timeframe == '1m':
+        periods_per_year=periods_per_year*60
+
+    #crypto trades all time
+    if IS_CRYPTO:
+        periods_per_year= periods_per_year*24*365
+    else: # number of trading hours per year is 1630
+        periods_per_year = periods_per_year*1630
     # Calculate excess returns
     excess_returns = returns - (risk_free_rate / periods_per_year)
     

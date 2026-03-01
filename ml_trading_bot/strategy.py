@@ -56,7 +56,6 @@ def add_equity_context(df,symbol =SYMBOL,timeframe= TIMEFRAME):
     # Clean up NaN values caused by rolling windows and shifts
     df=df.dropna()
     
-    print(f"✅ Dataset ready: {len(df)} rows.")
     return df
 
 def add_crypto_context(df, symbol=SYMBOL, timeframe=TIMEFRAME, exchange=None):
@@ -72,6 +71,9 @@ def add_crypto_context(df, symbol=SYMBOL, timeframe=TIMEFRAME, exchange=None):
     # Logic: Volume * (Where did we close relative to the range?)
     # -1.0 = Max Selling Pressure (Closed on Low)
     # +1.0 = Max Buying Pressure (Closed on High)
+
+    
+    print("⚙️ Calculating crypto Features...")
     
     # Avoid division by zero
     range_span = (df['high'] - df['low']).replace(0, 1e-9)
@@ -113,7 +115,7 @@ def add_crypto_context(df, symbol=SYMBOL, timeframe=TIMEFRAME, exchange=None):
     df=df.drop(columns=['daily_ma'], errors='ignore')
     return df
 
-def add_indicators(df):
+def add_indicators(df, is_crypto=IS_CRYPTO):
     """
     Takes raw OHLVC data and adds technical indicators.
     Used by both Training and Live Prediction to ensure consistency.
@@ -180,10 +182,12 @@ def add_indicators(df):
     # Fill the very first rows (which are NaN due to shifting) with 0
     # This prevents dropna() from eating your entire 200-row window
     data['dist_from_mean'] = data['dist_from_mean'].fillna(0)
-    if IS_CRYPTO:
+    if is_crypto:
         data = add_crypto_context(data)
     else:
         data = add_equity_context(data)
+
+    print(f"✅ Dataset ready: {len(df)} rows.")
     return data
 
 def train_master_model(df,add_indicators_happened=False, random_seed=42, active_features= ['returns', 'range', 'rsi', 'volatility','adx','volume_change', 'relative_volume','dist_from_mean']):
@@ -201,12 +205,12 @@ def train_master_model(df,add_indicators_happened=False, random_seed=42, active_
         data=add_indicators(df)
     
     
-    # Target: 1 if next price is higher, else 0
-    threshold = 0.00
+    # Target: 1 if next price is higher, -1 if lower, else 0
+    threshold = 0.001
     future_returns = data['close'].pct_change().shift(-1)
-    
-    data['target'] = (future_returns > threshold).astype(int)
 
+    data['target'] = np.where(future_returns >= threshold, 'UP',
+                       np.where(future_returns<= -threshold, 'DOWN', 'INC'))
     data = data.dropna()
 
     # Safety: ensure we still have data after dropping NaNs
@@ -256,7 +260,7 @@ def generate_signal(df,add_indicators_happened=False,active_features=['returns',
         data = add_indicators(df)
     data=data.fillna(0)
  
-    if random.randint(1,100)==1 or datetime.now()-LAST_TRAIN_TIME > timedelta(minutes =10):
+    if random.randint(1,10000)==1 or datetime.now()-LAST_TRAIN_TIME > timedelta(minutes =10):
         train_master_model(df,active_features=active_features,add_indicators_happened=True)   
     
     try:
@@ -275,11 +279,12 @@ def generate_signal(df,add_indicators_happened=False,active_features=['returns',
         # predict_proba returns a list of probabilities for each class
         # We take [0] to get the first row, and use max() or specific index
         probs = model.predict_proba(latest_features)[0]
-        # If model has 2 classes (0 and 1), probs has length 2.
-        # probs[1] is the probability of going UP.
-        prob_up = probs[1]
-        print(prob_up)
-        
+        #find probs accordingly (sometimes no inc so can't just auto)
+        #probably can always send down_index to 0 and up to -1 but may be cases where 
+        up_index = np.where(model.classes_ == "UP")[0][0]
+        down_index = np.where(model.classes_ == "DOWN")[0][0]
+        prob_down = probs[down_index]
+        prob_up = probs[up_index]
     except IndexError:
         return "HOLD"
     
@@ -290,26 +295,26 @@ def generate_signal(df,add_indicators_happened=False,active_features=['returns',
     ADX_THRESHOLD = -100000
     
     # HIGH CONFIDENCE BAR (To beat fees)
-    CONFIDENCE = 0.5
+    CONFIDENCE = 0.4
 
     if current_adx > ADX_THRESHOLD:
         # === TRENDING REGIME (Normal Logic) ===
         # If trend is strong, TRUST the model direction.
-        if prob_up > CONFIDENCE:
-            print("buy")
+        if prob_up >prob_down and prob_up> CONFIDENCE:
             return "BUY"
-        elif prob_up < (1 - CONFIDENCE):
-            print("sell")        
+        elif prob_down > prob_up and prob_down>CONFIDENCE:    
             return "SELL"
+        else:
+            return "HOLD"
     else:
         # === RANGING REGIME (Contrarian Logic) ===
         # If trend is weak, FADE the model direction.
         # This is the "Switch" that gave you the +0.54 Sharpe
-        if prob_up > CONFIDENCE:
-            print("sell")
-            return "SELL" # Model screams UP -> We sell top
-        elif prob_up < (1 - CONFIDENCE):
-            print("buy")
-            return "BUY"  # Model screams DOWN -> We buy dip
+        if prob_up >prob_down and prob_up> CONFIDENCE:
+            return "SELL"
+        elif prob_down > prob_up and prob_down>CONFIDENCE:    
+            return "BUY"
+        else:
+            return "HOLD"
 
     return "HOLD"
