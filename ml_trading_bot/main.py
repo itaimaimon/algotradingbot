@@ -4,7 +4,7 @@ from config import SYMBOL, TIMEFRAME, IS_CRYPTO
 from data_loader import get_historical_data
 from strategy import train_master_model
 from backtester import run_backtest
-from live_trading_crypto import run_live_bot
+from ml_trading_bot.live_trading import run_live_bot
 from feature_dimensional_reduction_tests import run_feature_tournament
 
 # --- SETTINGS ---

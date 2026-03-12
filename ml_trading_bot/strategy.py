@@ -206,8 +206,9 @@ def train_master_model(df,add_indicators_happened=False, random_seed=42, active_
     
     
     # Target: 1 if next price is higher, -1 if lower, else 0
-    threshold = 0.001
-    future_returns = data['close'].pct_change().shift(-1)
+    threshold = 0.0025
+    future_returns =data['close'].pct_change().shift(-1)   
+
 
     data['target'] = np.where(future_returns >= threshold, 'UP',
                        np.where(future_returns<= -threshold, 'DOWN', 'INC'))
@@ -260,8 +261,8 @@ def generate_signal(df,add_indicators_happened=False,active_features=['returns',
         data = add_indicators(df)
     data=data.fillna(0)
  
-    if random.randint(1,10000)==1 or datetime.now()-LAST_TRAIN_TIME > timedelta(minutes =10):
-        train_master_model(df,active_features=active_features,add_indicators_happened=True)   
+    #if random.randint(1,10000)==1 or datetime.now()-LAST_TRAIN_TIME > timedelta(minutes =10):
+    #    train_master_model(df,active_features=active_features,add_indicators_happened=True)   
     
     try:
         model = joblib.load(MODEL_PATH)

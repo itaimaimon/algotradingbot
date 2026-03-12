@@ -35,6 +35,9 @@ def get_exchange():
         }
     return exchange    
 
+
+
+
 def get_stock_data(symbol, timeframe, target_rows=1000):
     # 1. Initialize the STOCK client (not crypto)
     client = StockHistoricalDataClient(API_KEY, SECRET_KEY)
